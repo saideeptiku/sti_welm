@@ -5,7 +5,7 @@ Paper Authors By: Han Zou, Baoqi Huang, Xiaoxuan Lu, Hao Jiang, Lihua Xie
 """
 from scipy.stats import pearsonr
 import math
-import numpy as np
+import pandas as pd
 
 
 class STIWELM:
@@ -14,10 +14,26 @@ class STIWELM:
         self.input_labels = input_labels
         self.output_labels = output_labels
 
-    def get_projected_position(self):
-        """
-        """
+    def get_projected_position(self, test_df, index):
+
+        # get test vector
+        test_vector = vector_from_df(test_df, index, self.input_labels)
+
+        # calculate the STI values for test_vector and each data frame
+
         print(self)
+
+
+def vector_from_df(df, index, input_labels):
+    """
+    get RSS values as vector at index with position labels in list
+    :param df: data frame pandas
+    :param index: starts from 0
+    :param input_labels: list of labels
+    :return:
+    """
+
+    return list(df[input_labels].iloc[index])
 
 
 def calculate_sti(vector_a, vector_b):
@@ -47,13 +63,3 @@ def calculate_sti_each_row(vector_a, vectors):
     for vector_b in vectors:
         # print(vector_b)
         yield calculate_sti(vector_a, vector_b)
-
-
-# if __name__ == "__main__":
-#     s = calculate_sti_each_row(
-#         np.array([1, 2, 3]),
-#         np.array([[0, 1, 3],
-#                   [0, 3, 2]])
-#     )
-#
-#     print(list(s))

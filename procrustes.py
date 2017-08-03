@@ -20,8 +20,9 @@ class STIWELM:
         test_vector = vector_from_df(test_df, index, self.input_labels)
 
         # calculate the STI values for test_vector and each data frame
-
-        print(self)
+        for index, row in test_df[self.input_labels].iterrows():
+            print(row)
+            break
 
 
 def vector_from_df(df, index, input_labels):

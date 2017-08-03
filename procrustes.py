@@ -3,26 +3,46 @@ A Robust Indoor Positioning System Based on the
 Procrustes Analysis and Weighted Extreme Learning Machine
 Paper Authors By: Han Zou, Baoqi Huang, Xiaoxuan Lu, Hao Jiang, Lihua Xie
 """
-from scipy.stats import pearsonr
+
 import math
-import pandas as pd
+from scipy.stats import pearsonr
 
 
 class STIWELM:
+    """
+    class for STI WELM
+    """
+
     def __init__(self, train_df, input_labels, output_labels):
         self.train_df = train_df
         self.input_labels = input_labels
         self.output_labels = output_labels
 
     def get_projected_position(self, test_df, index):
+        """
+        get the projected position for the data 
+        given in test data frame at index 
+        """
 
         # get test vector
         test_vector = vector_from_df(test_df, index, self.input_labels)
 
         # calculate the STI values for test_vector and each data frame
-        for index, row in test_df[self.input_labels].iterrows():
-            print(row)
-            break
+        rp_sti = []
+        for index, row in self.train_df[self.input_labels].iterrows():
+            rp_sti.append(calculate_sti(list(row), test_vector))
+
+        # calculate the weights of sti values
+        rp_weights = STIWELM.__cal_weights__(rp_sti)
+
+        # attach rp_weights to train_df column and
+        # sort by weights
+
+    @staticmethod
+    def __cal_weights__(sti_values):
+        sum_sti = sum([1 / s for s in sti_values])
+
+        return [1 / (s * sum_sti) for s in sti_values]
 
 
 def vector_from_df(df, index, input_labels):

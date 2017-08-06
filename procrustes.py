@@ -5,7 +5,11 @@ Paper Authors By: Han Zou, Baoqi Huang, Xiaoxuan Lu, Hao Jiang, Lihua Xie
 """
 
 import math
+import constants
+import numpy as np
+import pandas as pd
 from scipy.stats import pearsonr
+from util_functions import print_df
 
 
 class STIWELM:
@@ -20,23 +24,89 @@ class STIWELM:
 
     def get_projected_position(self, test_df, index):
         """
-        get the projected position for the data 
-        given in test data frame at index 
+        get the projected position for the data
+        given in test data frame at index
         """
 
         # get test vector
-        test_vector = vector_from_df(test_df, index, self.input_labels)
+        test_vector = vector_from_df(index, test_df, self.input_labels)
+
+        # get weighted train_df
+        train_df = self.filter_by_weight_threshold(test_vector)
+
+        # create new TDS vector
+        tds_new = self.build_tds_new(train_df, test_vector)
+
+        # create a weight matrix
+
+        # run WELM using weight matrix for weights
+
+        # return projected position tuple
+
+    def build_tds_new(self, train_df, test_vector):
+        """
+        create the new TDS vector based on equation 16
+        """
+        sti_values = list(self.sti_each_row_in_df(test_vector, train_df))
+
+        # len of these sti values should be same as number of rows
+        assert len(sti_values) == train_df.shape[0]
+
+        # denominator value
+        sti_weight_sum = sum([1 / s for s in sti_values])
+
+        # init numerator value
+        weight_sub_q_rds = 0
+        for sti_sub_q, rds_sub_q in zip(sti_values, train_df[self.input_labels].values.tolist()):
+            rds_sub_q = np.array(rds_sub_q)
+            weight_sub_q_rds += rds_sub_q * (1 / sti_sub_q)
+
+        return (1 / sti_weight_sum) * (weight_sub_q_rds)
+
+    def filter_by_weight_threshold(self, test_vector):
+        """
+        create weights column and populate
+        remove rows lower than weight threshold
+        return df sorted on weights column descending
+        """
 
         # calculate the STI values for test_vector and each data frame
-        rp_sti = []
-        for index, row in self.train_df[self.input_labels].iterrows():
-            rp_sti.append(calculate_sti(list(row), test_vector))
+        rp_sti = list(self.sti_each_row_in_df(test_vector, self.train_df))
 
         # calculate the weights of sti values
         rp_weights = STIWELM.__cal_weights__(rp_sti)
 
-        # attach rp_weights to train_df column and
-        # sort by weights
+        # attach rp_weights to train_df column and sort by weights
+        # first need to check if the number of rows are same as weights
+        assert self.train_df.shape[0] == len(rp_weights)
+
+        # keep new dataframe in a temp copy
+        train_df = self.train_df.copy()
+        train_df[constants.WEIGHT_LABEL] = rp_weights
+
+        # keep all rows where weight is above threshold
+        train_df = train_df.loc[train_df[constants.WEIGHT_LABEL]
+                                > constants.WEIGHT_THRESHOLD]
+
+        # sort rows in descending order
+        train_df = train_df.sort_values(constants.WEIGHT_LABEL,
+                                        ascending=False)
+
+        # drop the newly added weight column
+        train_df = pd.DataFrame(train_df)
+        return train_df.drop(constants.WEIGHT_LABEL)
+
+
+    def sti_each_row_in_df(self, test_vector, data_frame):
+        """
+        calculate the sti for each vector in dataframe
+        :param vector_a: vector_a is np 1D array
+        :param vectors: 2D array where each row is vector_b
+        :return: list of sti values
+        """
+        # calculate the STI values for test_vector and each data frame
+        for _, row in data_frame[self.input_labels].iterrows():
+            yield calculate_sti(list(row), test_vector)
 
     @staticmethod
     def __cal_weights__(sti_values):
@@ -45,7 +115,7 @@ class STIWELM:
         return [1 / (s * sum_sti) for s in sti_values]
 
 
-def vector_from_df(df, index, input_labels):
+def vector_from_df(index, dataframe, input_labels):
     """
     get RSS values as vector at index with position labels in list
     :param df: data frame pandas
@@ -54,7 +124,7 @@ def vector_from_df(df, index, input_labels):
     :return:
     """
 
-    return list(df[input_labels].iloc[index])
+    return list(dataframe[input_labels].iloc[index])
 
 
 def calculate_sti(vector_a, vector_b):
@@ -65,22 +135,6 @@ def calculate_sti(vector_a, vector_b):
     :return: STI
     """
     assert len(vector_a) == len(vector_b)
+    pearson, _ = pearsonr(vector_a, vector_b)
 
-    p, _ = pearsonr(vector_a, vector_b)
-
-    n = len(vector_a)
-
-    return math.sqrt(2 * n * (1 - p))
-
-
-def calculate_sti_each_row(vector_a, vectors):
-    """
-    calculate the sti for each vector in list
-    :param vector_a: vector_a is np 1D array
-    :param vectors: 2D array where each row is vector_b
-    :return: list of sti values
-    """
-
-    for vector_b in vectors:
-        # print(vector_b)
-        yield calculate_sti(vector_a, vector_b)
+    return math.sqrt(2 * len(vector_b) * (1 - pearson))

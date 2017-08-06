@@ -1,10 +1,12 @@
-# import modules
-import pandas as pd
-from label_x_y_locations import label_similar_locations
-from util_functions import print_df, fillna_in_columns
-import matplotlib.pyplot as plt
-import csv
+"""
+main file for procustes analysis
+"""
+# import matplotlib.pyplot as plt
+# import csv
 import procrustes as ps
+import pandas as pd
+import util_functions as uf
+# from label_x_y_locations import label_similar_locations
 
 
 def main():
@@ -23,8 +25,13 @@ def main():
     output_labels = list(train_df.columns[-3:-1])
 
     # fill na in columns and keep only required labels
-    train_df = fillna_in_columns(train_df, input_labels, -100)[input_labels + output_labels]
-    test_df = fillna_in_columns(test_df, input_labels, -100)[input_labels + output_labels]
+    train_df = uf.fillna_in_columns(
+        train_df, input_labels, -100)[input_labels + output_labels]
+    test_df = uf.fillna_in_columns(
+        test_df, input_labels, -100)[input_labels + output_labels]
+
+    train_df = train_df.dropna(subset=output_labels)
+    test_df = test_df.dropna(subset=output_labels)
 
     sti = ps.STIWELM(train_df, input_labels, output_labels)
 

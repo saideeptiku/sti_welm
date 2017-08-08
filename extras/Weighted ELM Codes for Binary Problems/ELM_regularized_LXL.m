@@ -2,8 +2,8 @@ function [TrainingTime, TestingTime, test_sensitivity, test_specificity, test_gm
 
 
 %%%%%%%%%%% Macro definition
-REGRESSION=0;
-CLASSIFIER=1;
+REGRESSION=1;
+CLASSIFIER=0;
 
 %%%%%%%%%%% Load training dataset
 train_data = TrainingData_File;

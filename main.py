@@ -35,7 +35,7 @@ def main():
 
     sti = ps.STI(train_df, input_labels, output_labels)
 
-    sti.get_projected_position(test_df, 2)
+    print(sti.get_tds_new(test_df, 2))
 
 
 if __name__ == '__main__':

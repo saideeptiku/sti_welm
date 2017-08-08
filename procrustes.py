@@ -9,7 +9,6 @@ import constants
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
-from util_functions import print_df
 
 
 class STI:
@@ -22,27 +21,20 @@ class STI:
         self.input_labels = input_labels
         self.output_labels = output_labels
 
-    def get_projected_position(self, test_df, index):
+    def get_tds_new(self, test_df, index):
         """
         get the projected position for the data
         given in test data frame at index
         """
 
         # get test vector
-        test_vector = vector_from_df(index, test_df, self.input_labels)
+        test_vector = STI.vector_from_df(index, test_df, self.input_labels)
 
         # get weighted train_df
         train_df = self.filter_by_weight_threshold(test_vector)
 
         # create new TDS vector
-        tds_new = self.build_tds_new(train_df, test_vector)
-        # STI PART ENDS HERE
-
-        # create a weight matrix
-
-        # run WELM using weight matrix for weights
-
-        # return projected position tuple
+        return self.build_tds_new(train_df, test_vector)
 
     def build_tds_new(self, train_df, test_vector):
         """
@@ -95,8 +87,7 @@ class STI:
 
         # drop the newly added weight column
         train_df = pd.DataFrame(train_df)
-        return train_df.drop(constants.WEIGHT_LABEL)
-
+        return train_df.drop(constants.WEIGHT_LABEL, axis=1)
 
     def sti_each_row_in_df(self, test_vector, data_frame):
         """
@@ -107,7 +98,7 @@ class STI:
         """
         # calculate the STI values for test_vector and each data frame
         for _, row in data_frame[self.input_labels].iterrows():
-            yield calculate_sti(list(row), test_vector)
+            yield STI.calculate_sti(list(row), test_vector)
 
     @staticmethod
     def __cal_weights__(sti_values):
@@ -115,27 +106,27 @@ class STI:
 
         return [1 / (s * sum_sti) for s in sti_values]
 
+    @staticmethod
+    def vector_from_df(index, dataframe, input_labels):
+        """
+        get RSS values as vector at index with position labels in list
+        :param df: data frame pandas
+        :param index: starts from 0
+        :param input_labels: list of labels
+        :return:
+        """
 
-def vector_from_df(index, dataframe, input_labels):
-    """
-    get RSS values as vector at index with position labels in list
-    :param df: data frame pandas
-    :param index: starts from 0
-    :param input_labels: list of labels
-    :return:
-    """
+        return list(dataframe[input_labels].iloc[index])
 
-    return list(dataframe[input_labels].iloc[index])
+    @staticmethod
+    def calculate_sti(vector_a, vector_b):
+        """
+        calculate the STI value
+        STI = [2n(1-p)]^1/2
+        p is the pearson correlation
+        :return: STI
+        """
+        assert len(vector_a) == len(vector_b)
+        pearson, _ = pearsonr(vector_a, vector_b)
 
-
-def calculate_sti(vector_a, vector_b):
-    """
-    calculate the STI value
-    STI = [2n(1-p)]^1/2
-    p is the pearson correlation
-    :return: STI
-    """
-    assert len(vector_a) == len(vector_b)
-    pearson, _ = pearsonr(vector_a, vector_b)
-
-    return math.sqrt(2 * len(vector_b) * (1 - pearson))
+        return math.sqrt(2 * len(vector_b) * (1 - pearson))

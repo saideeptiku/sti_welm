@@ -12,7 +12,7 @@ from scipy.stats import pearsonr
 from util_functions import print_df
 
 
-class STIWELM:
+class STI:
     """
     class for STI WELM
     """
@@ -36,6 +36,7 @@ class STIWELM:
 
         # create new TDS vector
         tds_new = self.build_tds_new(train_df, test_vector)
+        # STI PART ENDS HERE
 
         # create a weight matrix
 
@@ -74,7 +75,7 @@ class STIWELM:
         rp_sti = list(self.sti_each_row_in_df(test_vector, self.train_df))
 
         # calculate the weights of sti values
-        rp_weights = STIWELM.__cal_weights__(rp_sti)
+        rp_weights = STI.__cal_weights__(rp_sti)
 
         # attach rp_weights to train_df column and sort by weights
         # first need to check if the number of rows are same as weights

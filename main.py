@@ -33,7 +33,7 @@ def main():
     train_df = train_df.dropna(subset=output_labels)
     test_df = test_df.dropna(subset=output_labels)
 
-    sti = ps.STIWELM(train_df, input_labels, output_labels)
+    sti = ps.STI(train_df, input_labels, output_labels)
 
     sti.get_projected_position(test_df, 2)
 

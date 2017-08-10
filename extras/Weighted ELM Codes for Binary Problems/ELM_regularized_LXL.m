@@ -1,4 +1,5 @@
-function [TrainingTime, TestingTime, test_sensitivity, test_specificity, test_gmean] = ELM_regularized_LXL(TrainingData_File, TestingData_File, Elm_Type, NumberofHiddenNeurons, ActivationFunction,C)
+function [TrainingTime, TestingTime, test_sensitivity, test_specificity, test_gmean] = \
+ELM_regularized_LXL(TrainingData_File, TestingData_File, Elm_Type, NumberofHiddenNeurons, ActivationFunction,C)
 
 
 %%%%%%%%%%% Macro definition
@@ -118,6 +119,7 @@ clear tempH;                                        %   Release the temparary ar
 % OutputWeight=H'*((H'*H+speye(n)/C)\(T')); 
 n = NumberofHiddenNeurons;
 
+% spye=> sparse identity matrix
 OutputWeight=((H*W*H'+speye(n)/C)\(H*W*T')); 
 % OutputWeight=mtimesx(H,((mtimesx(H',H)+speye(n)/C)\T')); 
 % OutputWeight=inv(H * H') * H * T';                         % faster implementation

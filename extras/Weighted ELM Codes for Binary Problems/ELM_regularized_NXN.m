@@ -89,11 +89,14 @@ BiasofHiddenNeurons=rand(NumberofHiddenNeurons,1);
 
 tempH=InputWeight*P;
 
-clear P;                                            %   Release input of training data 
-
+ %   Release input of training data 
+clear P;                            
+               
 ind=ones(1,NumberofTrainingData);
 
-BiasMatrix=BiasofHiddenNeurons(:,ind);              %   Extend the bias matrix BiasofHiddenNeurons to match the demention of H
+%   Extend the bias matrix BiasofHiddenNeurons to match the demention of H
+BiasMatrix=BiasofHiddenNeurons(:,ind);              
+
 tempH=tempH+BiasMatrix;
 
 %%%%%%%%%%% Calculate hidden neuron output matrix H

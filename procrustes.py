@@ -13,7 +13,7 @@ from scipy.stats import pearsonr
 
 class STI:
     """
-    class for STI WELM
+    class for STI
     """
 
     def __init__(self, train_df, input_labels, output_labels):

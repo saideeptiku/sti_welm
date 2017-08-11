@@ -125,13 +125,9 @@ clear tempH;                                        %   Release the temparary ar
 n = size(T,2);
 OutputWeight=H*((W*H'*H+speye(n)/C)\(W*T')); 
 
-% n = NumberofHiddenNeurons;
-% OutputWeight=((H*H'+speye(n)/C)\(H*T')); 
 
-% OutputWeight=mtimesx(H,((mtimesx(H',H)+speye(n)/C)\T')); 
-% OutputWeight=inv(H * H') * H * T';                         % faster implementation
-% end_time_train=cputime;
-% TrainingTime=end_time_train-start_time_train     ;   %   Calculate CPU time (seconds) spent for training ELM
+
+
 TrainingTime=toc;
 %%%%%%%%%%% Calculate the training accuracy
 Y=(H' * OutputWeight)';                             %   Y: the actual output of the training data
@@ -139,6 +135,10 @@ if Elm_Type == REGRESSION
     TrainingAccuracy=sqrt(mse(T - Y))         ;      %   Calculate training accuracy (RMSE) for regression case
 end
 clear H;
+
+
+
+
 
 %%%%%%%%%%% Calculate the output of testing input
 start_time_test=cputime;

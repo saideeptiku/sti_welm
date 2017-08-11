@@ -7,7 +7,8 @@ import procrustes as ps
 import pandas as pd
 import util_functions as uf
 # from label_x_y_locations import label_similar_locations
-
+import numpy as np
+from WELM import WelmRegressor
 
 def main():
     """
@@ -39,4 +40,19 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+
+
+    TM = np.matrix([
+        [1, 2, 3],
+        [6, 5, 8],
+        [5, 7, 9]
+    ])
+
+    OM = np.matrix([
+        [1, 2],
+        [3, 4],
+        [5, 6]
+    ])
+
+    WelmRegressor(TM, OM, np.sin, 8, 24)

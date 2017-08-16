@@ -55,4 +55,19 @@ if __name__ == '__main__':
         [5, 6]
     ])
 
-    WelmRegressor(TM, OM, np.sin, 8, 24)
+    WM = np.matrix([
+        [1, 2, 3],
+        [6, 5, 8],
+        [5, 7, 9]
+    ])
+
+
+    M = WelmRegressor(TM, OM, np.sin, 8, 24, weight_mat=WM)
+
+    PM = np.matrix([
+        [1, 2, 1],
+        [6, 5, 2],
+        [5, 7, 3]
+    ])
+
+    print(M.get_projected(PM))

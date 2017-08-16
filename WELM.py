@@ -5,7 +5,6 @@ Procrustes Analysis and Weighted Extreme Learning Machine
 Paper Authors By: Han Zou, Baoqi Huang, Xiaoxuan Lu, Hao Jiang, Lihua Xie
 """
 import numpy as np
-import math
 
 
 class WelmRegressor:
@@ -44,8 +43,11 @@ class WelmRegressor:
         # set hyper parameter
         self.hyper_param_c = hyper_param_c
 
+        # set input weigth and bias
+        self.input_weight, self.bias_of_hidden_neurons = self.__get_input_weight_and_bias__()
+
         # build H matrix
-        self.h_mat = self.__build_hidden_layer_output_matrix__()
+        self.h_mat = self.__build_hidden_layer_output_matrix__(self.train_mat)
 
         # build \beta matrix
         self.beta_mat = self.__build_output_weight_matrix__()
@@ -55,9 +57,18 @@ class WelmRegressor:
         self.trained_output_mat = self.h_mat * self.beta_mat
 
         # get the output accuracy
-        print("Trained with output accuracy: ", self.get_trained_accuracy())
+        print("Trained with RMSE: ", self.get_trained_accuracy())
         # get the output accuracy
         print("Trained with AED: ", self.get_trained_average_distance())
+
+    def get_projected(self, test_mat):
+        """
+        get projected output from NN
+        """
+        h_mat_test = self.__build_hidden_layer_output_matrix__(test_mat)
+        output_mat = h_mat_test * self.beta_mat
+
+        return output_mat
 
     def get_trained_accuracy(self):
         """
@@ -70,7 +81,6 @@ class WelmRegressor:
         get the average euclidean distance between model created and training data
         """
         return WelmRegressor.aed(self.trained_output_mat, self.t_mat)
-
 
     @staticmethod
     def aed(predictions, targets):
@@ -86,25 +96,29 @@ class WelmRegressor:
         based on sklearn.metrics.mean_squared_error
         """
         out_errors = np.average(np.square((predictions - targets)), axis=0)
-        return np.average(out_errors) 
+        return np.average(out_errors)
 
-    def __build_hidden_layer_output_matrix__(self):
-        # between -1 to 1
+    def __get_input_weight_and_bias__(self):
         input_weight = np.random.rand(
             self.num_hidden_neuron, self.num_input_neurons) * 2 - 1
 
         bias_of_hidden_neurons = np.random.rand(self.num_hidden_neuron, 1)
 
-        temp_h = input_weight * self.train_mat
+        return input_weight, bias_of_hidden_neurons
+
+    def __build_hidden_layer_output_matrix__(self, data_mat):
+
+        # between -1 to 1
+        temp_h = self.input_weight * data_mat
 
         # shape of H matrix and bias matrix should match
         # create two more coloumns fo ones
         ones = np.ones(
             [
-                bias_of_hidden_neurons.shape[0],
-                self.num_train_data - bias_of_hidden_neurons.shape[1]
+                self.bias_of_hidden_neurons.shape[0],
+                data_mat.shape[0] - self.bias_of_hidden_neurons.shape[1]
             ], )
-        bias_matrix = np.append(bias_of_hidden_neurons, ones, axis=1)
+        bias_matrix = np.append(self.bias_of_hidden_neurons, ones, axis=1)
 
         temp_h = temp_h + bias_matrix
 
@@ -144,20 +158,3 @@ class WelmRegressor:
         inv_mul_mat = np.linalg.lstsq(sum_inner_c_mat, outter_mat)[0]
 
         return self.h_mat.transpose() * inv_mul_mat
-
-
-# if __name__ == "__main__":
-
-#     TM = np.matrix([
-#         [1, 2, 3],
-#         [6, 5, 8],
-#         [5, 7, 9]
-#     ])
-
-#     OM = np.matrix([
-#         [1, 2],
-#         [3, 4],
-#         [5, 6]
-#     ])
-
-#     WelmRegressor(TM, OM, np.sin, 2, 24)

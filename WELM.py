@@ -65,6 +65,20 @@ class WelmRegressor:
         """
         get projected output from NN
         """
+        # # the shape of test_mat should match shape of train_mat
+        # columns sholuld be same
+        assert self.train_mat.shape[1] == test_mat.shape[1], "train-test column mismatch"
+        # rows should be less than or equal to train_mat
+        if self.train_mat.shape[0] > test_mat.shape[0]:
+            # add rows of zero untill shape match
+            zero_mat = np.zeros((self.train_mat.shape[0] - test_mat.shape[0], test_mat.shape[1]))
+            test_mat = np.vstack((test_mat, zero_mat))
+
+        elif self.train_mat.shape[0] < test_mat.shape[0]:
+            exit("train data rows should be more than test rows.")
+        else:
+            pass
+
         h_mat_test = self.__build_hidden_layer_output_matrix__(test_mat)
         output_mat = h_mat_test * self.beta_mat
 

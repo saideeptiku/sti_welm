@@ -144,9 +144,14 @@ clear H;
 start_time_test=cputime;
 tempH_test=InputWeight*TV.P;
 clear TV.P;             %   Release input of testing data             
+
 ind=ones(1,NumberofTestingData);
-BiasMatrix=BiasofHiddenNeurons(:,ind);              %   Extend the bias matrix BiasofHiddenNeurons to match the demention of H
+
+BiasMatrix=BiasofHiddenNeurons(:,ind);              
+
+%   Extend the bias matrix BiasofHiddenNeurons to match the demention of H
 tempH_test=tempH_test + BiasMatrix;
+
 switch lower(ActivationFunction)
     case {'sig','sigmoid'}
         %%%%%%%% Sigmoid 

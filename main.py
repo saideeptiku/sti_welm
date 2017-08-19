@@ -59,8 +59,8 @@ if __name__ == '__main__':
 
     M = WelmRegressor(TM, OM, np.sin, 8, 24)
 
-    # PM = np.matrix([
-    #     [1, 2, 1]
-    # ])
+    PM = np.matrix([
+        [6, 5, 8],
+    ])
 
-    # print(M.get_projected(PM))
+    print(M.get_projected(PM))

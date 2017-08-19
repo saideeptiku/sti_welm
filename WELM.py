@@ -19,9 +19,10 @@ class WelmRegressor:
         self.t_mat = np.matrix(output_mat)
 
         assert self.train_mat.shape[0] is output_mat.shape[0], \
-            "input and output should have same shape"
+            "input and output should have same number of rows"
 
         # number of trainng data is rows of input matrix
+        # M
         self.num_train_data = self.train_mat.shape[0]
 
         # number of input neuron is number of columns in input matrix
@@ -29,32 +30,40 @@ class WelmRegressor:
 
         # if weight matrix is not given then generate it
         # use contants Weights as diag(1)
+        # W
         if weight_mat is None:
-            self.w_mat = np.identity(self.num_input_neurons)
+            self.w_mat = np.identity(self.num_train_data)
         else:
             self.w_mat = weight_mat
 
         # get the number of hidden neurons
+        # L
         self.num_hidden_neuron = num_hidden_neuron
 
         # get the activation function
+        # G
         self.activation_function = activation_function
 
         # set hyper parameter
+        # C
         self.hyper_param_c = hyper_param_c
 
         # set input weigth and bias
         self.input_weight, self.bias_of_hidden_neurons = self.__get_input_weight_and_bias__()
+        # print("Input Weight Shape: ", self.input_weight.shape)
 
         # build H matrix
         self.h_mat = self.__build_hidden_layer_output_matrix__(self.train_mat)
+        # print("H shape:", self.h_mat.shape)
 
         # build \beta matrix
         self.beta_mat = self.__build_output_weight_matrix__()
+        # print("beta shape:", self.beta_mat.shape)
 
         # trained output
         # this matrix should be cloose to training data
         self.trained_output_mat = self.h_mat * self.beta_mat
+        # print("T shape: ", self.trained_output_mat.shape)
 
         # get the output accuracy
         print("Trained with RMSE: ", self.get_trained_accuracy())
@@ -68,16 +77,6 @@ class WelmRegressor:
         # # the shape of test_mat should match shape of train_mat
         # columns sholuld be same
         assert self.train_mat.shape[1] == test_mat.shape[1], "train-test column mismatch"
-        # rows should be less than or equal to train_mat
-        if self.train_mat.shape[0] > test_mat.shape[0]:
-            # add rows of zero untill shape match
-            zero_mat = np.zeros((self.train_mat.shape[0] - test_mat.shape[0], test_mat.shape[1]))
-            test_mat = np.vstack((test_mat, zero_mat))
-
-        elif self.train_mat.shape[0] < test_mat.shape[0]:
-            exit("train data rows should be more than test rows.")
-        else:
-            pass
 
         h_mat_test = self.__build_hidden_layer_output_matrix__(test_mat)
         output_mat = h_mat_test * self.beta_mat
@@ -123,7 +122,7 @@ class WelmRegressor:
     def __build_hidden_layer_output_matrix__(self, data_mat):
 
         # between -1 to 1
-        temp_h = self.input_weight * data_mat
+        temp_h = self.input_weight * data_mat.transpose()
 
         # shape of H matrix and bias matrix should match
         # create two more coloumns fo ones
@@ -160,15 +159,19 @@ class WelmRegressor:
         return np.linalg.lstsq(sum_inner_c_mat, outter_mat)[0]
 
     def __beta_l_is_greater_than_m__(self):
+        # print("L > M or M < L")
 
+        # print("inner - W", self.w_mat.shape, "H", self.h_mat.shape)
         inner_mat = self.w_mat * self.h_mat * self.h_mat.transpose()
+        # print("inner shape:", inner_mat.shape)
 
         i_by_c = np.identity(self.t_mat.shape[0]) / self.hyper_param_c
+        # print("I/C shape:", i_by_c.shape)
 
         sum_inner_c_mat = inner_mat + i_by_c
+        # print("sum inner mat shape:", sum_inner_c_mat.shape)
+        # print("T shape:", self.t_mat.shape)
 
-        outter_mat = self.w_mat * self.t_mat
+        w_mat_dot_t_mat = self.w_mat * self.t_mat
 
-        inv_mul_mat = np.linalg.lstsq(sum_inner_c_mat, outter_mat)[0]
-
-        return self.h_mat.transpose() * inv_mul_mat
+        return self.h_mat.transpose() * np.linalg.lstsq(sum_inner_c_mat, w_mat_dot_t_mat)[0]

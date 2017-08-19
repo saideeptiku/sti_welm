@@ -22,26 +22,66 @@ class STI:
         self.input_labels = input_labels
         self.output_labels = output_labels
 
-    def get_tds_new(self, test_df, index):
+        self.sti_weight_list_q = []
+        self.train_df_thrsh = None
+
+
+    def get_tds_new(self, index_or_vector, test_df=None):
         """
         get the projected position for the data
         given in test data frame at index
+        or provide test vector itself
+        test_df required when index provided
         """
 
         # get test vector
-        test_vector = STI.vector_from_df(index, test_df, self.input_labels)
+        if isinstance(index_or_vector, list):
+            test_vector = index_or_vector
+        else:
+            test_vector = STI.vector_from_df(
+                index_or_vector, test_df, self.input_labels)
 
         # get weighted train_df
-        train_df = self.filter_by_weight_threshold(test_vector)
+        # RDSq
+        train_df = self.__filter_by_weight_threshold__(test_vector)
+        self.train_df_thrsh = train_df
 
         # create new TDS vector
-        return self.build_tds_new(train_df, test_vector)
+        return self.__build_tds_new__(train_df, test_vector)
 
-    def build_tds_new(self, train_df, test_vector):
+    
+    def get_rds_new(self):
+        """
+        get all values that are greater than threshold values
+        returns two matrices of input and target with same number of rows
+        """
+        # TODO:
+        if self.train_df_thrsh is None:
+            exit("run get_tds_new first!")
+
+        return self.train_df_thrsh
+
+
+    def get_weight_matrix_for_welm(self, sample_per_ref_point):
+        """
+        get the weight matrix (W) as descibed in the paper.
+        """
+
+        if not self.sti_weight_list_q:
+            exit("run get_tds_new first!")
+        
+        diag_mat = np.diag(self.sti_weight_list_q)
+
+        i_f = np.identity(sample_per_ref_point)
+
+        return (1/sum(self.sti_weight_list_q)) * np.kron(diag_mat, i_f)
+
+
+    def __build_tds_new__(self, train_df, test_vector):
         """
         create the new TDS vector based on equation 16
         """
-        sti_values = list(self.sti_each_row_in_df(test_vector, train_df))
+        sti_values = list(self.__sti_each_row_in_df__(test_vector, train_df))
 
         # len of these sti values should be same as number of rows
         assert len(sti_values) == train_df.shape[0]
@@ -54,10 +94,11 @@ class STI:
         for sti_sub_q, rds_sub_q in zip(sti_values, train_df[self.input_labels].values.tolist()):
             rds_sub_q = np.array(rds_sub_q)
             weight_sub_q_rds += rds_sub_q * (1 / sti_sub_q)
+            self.sti_weight_list_q.append((1 / sti_sub_q))
 
         return (1 / sti_weight_sum) * (weight_sub_q_rds)
 
-    def filter_by_weight_threshold(self, test_vector):
+    def __filter_by_weight_threshold__(self, test_vector):
         """
         create weights column and populate
         remove rows lower than weight threshold
@@ -65,7 +106,7 @@ class STI:
         """
 
         # calculate the STI values for test_vector and each data frame
-        rp_sti = list(self.sti_each_row_in_df(test_vector, self.train_df))
+        rp_sti = list(self.__sti_each_row_in_df__(test_vector, self.train_df))
 
         # calculate the weights of sti values
         rp_weights = STI.__cal_weights__(rp_sti)
@@ -90,7 +131,7 @@ class STI:
         train_df = pd.DataFrame(train_df)
         return train_df.drop(constants.WEIGHT_LABEL, axis=1)
 
-    def sti_each_row_in_df(self, test_vector, data_frame):
+    def __sti_each_row_in_df__(self, test_vector, data_frame):
         """
         calculate the sti for each vector in dataframe
         :param vector_a: vector_a is np 1D array

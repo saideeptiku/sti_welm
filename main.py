@@ -36,11 +36,23 @@ def main():
 
     sti = ps.STI(train_df, input_labels, output_labels)
 
-    print(sti.get_tds_new(test_df, 2))
+    tds = sti.get_tds_new(2, test_df=test_df)
+    M = len(tds)
+
+    # should be M x M
+    W = sti.get_weight_matrix_for_welm(2)
+
+    print(M)
+
+    print(W.shape)
+
+    K = sti.get_rds_new()
+
+    uf.print_df(K)
 
 
 if __name__ == '__main__':
-    # main()
+    main()
 
 
     TM = np.matrix([

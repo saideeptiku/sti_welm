@@ -25,7 +25,6 @@ class STI:
         self.sti_weight_list_q = []
         self.train_df_thrsh = None
 
-
     def get_tds_new(self, index_or_vector, test_df=None):
         """
         get the projected position for the data
@@ -49,7 +48,6 @@ class STI:
         # create new TDS vector
         return self.__build_tds_new__(train_df, test_vector)
 
-    
     def get_rds_new(self):
         """
         get all values that are greater than threshold values
@@ -61,7 +59,6 @@ class STI:
 
         return self.train_df_thrsh
 
-
     def get_weight_matrix_for_welm(self, sample_per_ref_point):
         """
         get the weight matrix (W) as descibed in the paper.
@@ -69,13 +66,12 @@ class STI:
 
         if not self.sti_weight_list_q:
             exit("run get_tds_new first!")
-        
+
         diag_mat = np.diag(self.sti_weight_list_q)
 
         i_f = np.identity(sample_per_ref_point)
 
-        return (1/sum(self.sti_weight_list_q)) * np.kron(diag_mat, i_f)
-
+        return (1 / sum(self.sti_weight_list_q)) * np.kron(diag_mat, i_f)
 
     def __build_tds_new__(self, train_df, test_vector):
         """

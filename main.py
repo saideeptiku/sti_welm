@@ -10,6 +10,7 @@ import util_functions as uf
 import numpy as np
 from WELM import WelmRegressor
 
+
 def main():
     """
     main
@@ -53,7 +54,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
     TM = np.matrix([
         [1, 2, 3],

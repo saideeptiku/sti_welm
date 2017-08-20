@@ -9,6 +9,7 @@ import util_functions as uf
 # from label_x_y_locations import label_similar_locations
 import numpy as np
 from WELM import WelmRegressor
+import constants as c
 
 
 def main():
@@ -38,41 +39,22 @@ def main():
     sti = ps.STI(train_df, input_labels, output_labels)
 
     tds = sti.get_tds_new(2, test_df=test_df)
-    M = len(tds)
 
     # should be M x M
-    W = sti.get_weight_matrix_for_welm(2)
-
-    print(M)
+    W = sti.get_weight_matrix_for_welm(1)
 
     print(W.shape)
 
-    K = sti.get_rds_new()
+    in_mat, out_mat = sti.get_rds_new()
 
-    uf.print_df(K)
+    print(in_mat.shape, out_mat.shape)
+
+    M = WelmRegressor(in_mat, out_mat, np.sin, c.HIDDEN_LAYER_NEURONS, c.C_HYPER_PARAM)
+
+    print(tds.shape, in_mat.shape, out_mat.shape)
+
+    M.get_projected(tds)
 
 
 if __name__ == '__main__':
     main()
-
-    TM = np.matrix([
-        [1, 2, 3],
-        [6, 5, 8],
-        [5, 7, 9],
-        [6, 5, 8]
-    ])
-
-    OM = np.matrix([
-        [1, 2],
-        [3, 4],
-        [5, 6],
-        [3, 4]
-    ])
-
-    M = WelmRegressor(TM, OM, np.sin, 8, 24)
-
-    PM = np.matrix([
-        [6, 5, 8],
-    ])
-
-    print(M.get_projected(PM))

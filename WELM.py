@@ -122,10 +122,10 @@ class WelmRegressor:
     def __build_hidden_layer_output_matrix__(self, data_mat):
 
         # between -1 to 1
-        temp_h = self.input_weight * data_mat.transpose()
+        temp_h = np.dot(self.input_weight, data_mat.transpose())
 
         # shape of H matrix and bias matrix should match
-        # create two more coloumns fo ones
+        # create two more columns fo ones
         ones = np.ones(
             [
                 self.bias_of_hidden_neurons.shape[0],

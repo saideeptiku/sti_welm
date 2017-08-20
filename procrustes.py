@@ -42,22 +42,27 @@ class STI:
 
         # get weighted train_df
         # RDSq
-        train_df = self.__filter_by_weight_threshold__(test_vector)
-        self.train_df_thrsh = train_df
+        self.train_df_thrsh = self.__filter_by_weight_threshold__(test_vector)
 
         # create new TDS vector
-        return self.__build_tds_new__(train_df, test_vector)
+        return self.__build_tds_new__(self.train_df_thrsh, test_vector)
 
     def get_rds_new(self):
         """
         get all values that are greater than threshold values
         returns two matrices of input and target with same number of rows
         """
-        # TODO:
+
         if self.train_df_thrsh is None:
             exit("run get_tds_new first!")
 
-        return self.train_df_thrsh
+        input_mat = np.matrix(self.train_df_thrsh.drop(self.output_labels, axis=1).as_matrix())
+
+        output_mat = np.matrix(self.train_df_thrsh[self.output_labels])
+
+        assert input_mat.shape[0] == output_mat.shape[0], "shape mismatch!"
+
+        return input_mat, output_mat
 
     def get_weight_matrix_for_welm(self, sample_per_ref_point):
         """
@@ -92,13 +97,16 @@ class STI:
             weight_sub_q_rds += rds_sub_q * (1 / sti_sub_q)
             self.sti_weight_list_q.append((1 / sti_sub_q))
 
-        return (1 / sti_weight_sum) * (weight_sub_q_rds)
+        tds_new = (1 / sti_weight_sum) * weight_sub_q_rds
+
+        return tds_new.reshape(1, -1)
 
     def __filter_by_weight_threshold__(self, test_vector):
         """
         create weights column and populate
         remove rows lower than weight threshold
         return df sorted on weights column descending
+        :rtype: pandas dataframe
         """
 
         # calculate the STI values for test_vector and each data frame

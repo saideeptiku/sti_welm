@@ -21,7 +21,7 @@ class WelmRegressor:
         assert self.train_mat.shape[0] is output_mat.shape[0], \
             "input and output should have same number of rows"
 
-        # number of trainng data is rows of input matrix
+        # number of training data is rows of input matrix
         # M
         self.num_train_data = self.train_mat.shape[0]
 
@@ -29,7 +29,7 @@ class WelmRegressor:
         self.num_input_neurons = self.train_mat.shape[1]
 
         # if weight matrix is not given then generate it
-        # use contants Weights as diag(1)
+        # use constants Weights as diag(1)
         # W
         if weight_mat is None:
             self.w_mat = np.identity(self.num_train_data)
@@ -61,14 +61,9 @@ class WelmRegressor:
         # print("beta shape:", self.beta_mat.shape)
 
         # trained output
-        # this matrix should be cloose to training data
+        # this matrix should be choose to training data
         self.trained_output_mat = self.h_mat * self.beta_mat
         # print("T shape: ", self.trained_output_mat.shape)
-
-        # get the output accuracy
-        print("Trained with RMSE: ", self.get_trained_accuracy())
-        # get the output accuracy
-        print("Trained with AED: ", self.get_trained_average_distance())
 
     def get_projected(self, test_mat):
         """
@@ -98,7 +93,7 @@ class WelmRegressor:
     @staticmethod
     def aed(predictions, targets):
         """
-        get the average eucledian distance between prediction and target
+        get the average euclidean distance between prediction and target
         """
         return np.sum(np.square(predictions - targets), axis=1).mean()
 

@@ -49,7 +49,7 @@ def main():
 
     print(in_mat.shape, out_mat.shape)
 
-    M = WelmRegressor(in_mat, out_mat, np.sin, c.HIDDEN_LAYER_NEURONS, c.C_HYPER_PARAM)
+    M = WelmRegressor(in_mat, out_mat, np.sin, c.HIDDEN_LAYER_NEURONS, c.C_HYPER_PARAM, weight_mat=W)
 
     print(tds.shape, in_mat.shape, out_mat.shape)
 

@@ -53,7 +53,7 @@ def main():
 
     print(tds.shape, in_mat.shape, out_mat.shape)
 
-    M.get_projected(tds)
+    print(M.get_projected(tds))
 
 
 if __name__ == '__main__':

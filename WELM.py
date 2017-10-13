@@ -7,6 +7,28 @@ Paper Authors By: Han Zou, Baoqi Huang, Xiaoxuan Lu, Hao Jiang, Lihua Xie
 import numpy as np
 
 
+class ActFunc:
+    # triangular activation function
+    tribas = (lambda x: np.clip(1.0 - np.fabs(x), 0.0, 1.0))
+
+    # inverse triangular activation function
+    inv_tribas = (lambda x: np.clip(np.fabs(x), 0.0, 1.0))
+
+    # sigmoid activation function
+    sigmoid = (lambda x: 1.0 / (1.0 + np.exp(-x)))
+
+    # hard limit activation function
+    hardlim = (lambda x: (x > 0) * 1.0)
+
+    softlim = (lambda x: np.clip(x, 0.0, 1.0))
+
+    # sine function
+    sin = np.sin
+
+    # sine function
+    tanh = np.tanh
+
+
 class WelmRegressor:
     """
     class for WELM Regressor.
@@ -91,11 +113,28 @@ class WelmRegressor:
         return WelmRegressor.aed(self.trained_output_mat, self.t_mat)
 
     @staticmethod
-    def aed(predictions, targets):
+    def aed(predictions, targets, dimensions=2, conversion_factor=1):
         """
         get the average euclidean distance between prediction and target
         """
-        return np.sum(np.square(predictions - targets), axis=1).mean()
+        predictions = np.array(predictions).reshape(-1, dimensions)
+        targets = np.array(targets).reshape(-1, dimensions)
+
+        # print(predictions, targets)
+
+        return np.sqrt(np.sum(np.square(predictions - targets), axis=1)).mean() / conversion_factor
+
+    @staticmethod
+    def eds(predictions, targets, dimensions=2, conversion_factor=1):
+        """
+        get the euclidean distances between prediction and target
+        """
+        predictions = np.array(predictions).reshape(-1, dimensions)
+        targets = np.array(targets).reshape(-1, dimensions)
+
+        # print(predictions, targets)
+
+        return np.sqrt(np.sum(np.square(predictions - targets), axis=1)) / conversion_factor
 
     @staticmethod
     def rmse(predictions, targets):
@@ -149,9 +188,9 @@ class WelmRegressor:
 
         sum_inner_c_mat = inner_mat + i_by_c
 
-        outter_mat = self.h_mat.transpose() * self.w_mat * self.t_mat
+        outer_mat = self.h_mat.transpose() * self.w_mat * self.t_mat
 
-        return np.linalg.lstsq(sum_inner_c_mat, outter_mat)[0]
+        return np.linalg.lstsq(sum_inner_c_mat, outer_mat)[0]
 
     def __beta_l_is_greater_than_m__(self):
         # print("L > M or M < L")

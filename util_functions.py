@@ -16,7 +16,7 @@ def remove_columns(df, col_list):
     return df.drop(col_list, axis=1)
 
 
-def fillna_in_columns(df, cols, na):
+def fill_na_columns(df, cols, na):
 
     df[cols] = df[cols].fillna(na)
 

@@ -10,7 +10,7 @@ import constants
 import numpy as np
 import pandas as pd
 from scipy.stats import pearsonr
-
+import warnings
 
 class STI:
     """
@@ -27,22 +27,28 @@ class STI:
 
     def get_tds_new(self, index_or_vector, test_df=None):
         """
-        get the projected position for the data
-        given in test data frame at index
-        or provide test vector itself
+        provide test vector itself
         test_df required when index provided
+        index begins with 1
         """
 
         # get test vector
         if isinstance(index_or_vector, list):
             test_vector = index_or_vector
         else:
-            test_vector = STI.vector_from_df(
-                index_or_vector, test_df, self.input_labels)
+            test_vector = STI.vector_from_df(index_or_vector, test_df, self.input_labels)
 
         # get weighted train_df
         # RDSq
         self.train_df_thrsh = self.__filter_by_weight_threshold__(test_vector)
+
+        if self.train_df_thrsh is None:
+            print("No rows above threshold for", index_or_vector)
+            print("tds_new could not be formed")
+            return None
+        else:
+            pass
+            # print("Q (train rows above(", str(constants.WEIGHT_THRESHOLD), "):", self.train_df_thrsh.shape[0])
 
         # create new TDS vector
         return self.__build_tds_new__(self.train_df_thrsh, test_vector)
@@ -66,7 +72,7 @@ class STI:
 
     def get_weight_matrix_for_welm(self, sample_per_ref_point):
         """
-        get the weight matrix (W) as descibed in the paper.
+        get the weight matrix (W) as described in the paper.
         """
 
         if not self.sti_weight_list_q:
@@ -88,25 +94,33 @@ class STI:
         assert len(sti_values) == train_df.shape[0]
 
         # denominator value
-        sti_weight_sum = sum([1 / s for s in sti_values])
+        sti_weight_sum = sum([1 / s if s > 0 else constants.INF for s in sti_values])
 
         # init numerator value
         weight_sub_q_rds = 0
         for sti_sub_q, rds_sub_q in zip(sti_values, train_df[self.input_labels].values.tolist()):
             rds_sub_q = np.array(rds_sub_q)
-            weight_sub_q_rds += rds_sub_q * (1 / sti_sub_q)
-            self.sti_weight_list_q.append((1 / sti_sub_q))
 
-        tds_new = (1 / sti_weight_sum) * weight_sub_q_rds
+            try:
+                weight_sub_q_rds += rds_sub_q * (1 / sti_sub_q)
+            except ZeroDivisionError:
+                weight_sub_q_rds += rds_sub_q * constants.INF
 
-        return tds_new.reshape(1, -1)
+            try:
+                self.sti_weight_list_q.append((1 / sti_sub_q))
+            except ZeroDivisionError:
+                self.sti_weight_list_q.append(constants.INF)
+
+        tds_new = weight_sub_q_rds / sti_weight_sum
+
+        return np.array(tds_new).reshape(1, -1)
 
     def __filter_by_weight_threshold__(self, test_vector):
         """
         create weights column and populate
         remove rows lower than weight threshold
         return df sorted on weights column descending
-        :rtype: pandas dataframe
+        :rtype: pandas dataframe, None
         """
 
         # calculate the STI values for test_vector and each data frame
@@ -123,14 +137,19 @@ class STI:
         train_df = self.train_df.copy()
         train_df[constants.WEIGHT_LABEL] = rp_weights
 
+        pre_rows = train_df.shape[0]
+
         # keep all rows where weight is above threshold
         train_df = train_df.loc[train_df[constants.WEIGHT_LABEL]
                                 > constants.WEIGHT_THRESHOLD]
 
+        if train_df.empty and pre_rows > 0:
+            print("No rows above given threshold.")
+            return None
+
         # sort rows in descending order
         train_df = train_df.sort_values(constants.WEIGHT_LABEL,
                                         ascending=False)
-
         # drop the newly added weight column
         train_df = pd.DataFrame(train_df)
         return train_df.drop(constants.WEIGHT_LABEL, axis=1)
@@ -148,9 +167,9 @@ class STI:
 
     @staticmethod
     def __cal_weights__(sti_values):
-        sum_sti = sum([1 / s for s in sti_values])
+        sum_sti = sum([(1 / s) if s > 0 else constants.INF for s in sti_values])
 
-        return [1 / (s * sum_sti) for s in sti_values]
+        return [1 / (s * sum_sti) if s > 0 else constants.INF for s in sti_values]
 
     @staticmethod
     def vector_from_df(index, dataframe, input_labels):
@@ -173,6 +192,17 @@ class STI:
         :return: STI
         """
         assert len(vector_a) == len(vector_b)
-        pearson, _ = pearsonr(vector_a, vector_b)
 
-        return math.sqrt(2 * len(vector_b) * (1 - pearson))
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', RuntimeWarning)
+            pearson, _ = pearsonr(vector_a, vector_b)
+
+        if isNan(pearson):
+            pearson = 0
+
+        sti = math.sqrt(2 * len(vector_b) * (1 - pearson))
+
+        return sti
+
+def isNan(num):
+    return num != num

@@ -9,7 +9,7 @@ from WELM import ActFunc
 import constants as c
 import numpy as np
 import matplotlib.pyplot as plt
-from CSUDB.data_fetcher import get_map, PLACES
+from CSUDB.data_fetcher import get_map, Place
 
 
 def get_position(df, index, output_labels):
@@ -88,7 +88,7 @@ def main():
 
     print(min(eds), max(eds), np.median(eds))
 
-    plot_on_map(target, projected, get_map(PLACES[0]))
+    plot_on_map(target, projected, get_map(Place.list_all[0]))
 
 
 def plot_on_map(target, projected, map_path):

@@ -2,7 +2,7 @@
 All constants in this project
 """
 
-WEIGHT_THRESHOLD = 0.0058
+WEIGHT_THRESHOLD = 0.0040
 
 WEIGHT_LABEL = "weight"
 

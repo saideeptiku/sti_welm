@@ -9,7 +9,17 @@ from WELM import ActFunc
 import constants as c
 import numpy as np
 import matplotlib.pyplot as plt
-from CSUDB.data_fetcher import get_map, Place
+from CSUDB.data_fetcher import Device, Place, get_paths, read_meta, read_csv, get_map
+from collections import defaultdict
+from plotter import grouped_places_boxplot_devices
+
+px_to_m = {
+    'bc_infill': 20,
+    'clark_A': 18,
+    'lib': 20,
+    'lib_2m': 20,
+    'mech_f1': 17
+}
 
 
 def get_position(df, index, output_labels):
@@ -55,6 +65,143 @@ def sti_welm(train_df, test_df, input_labels, output_labels, at_index=None,
     return position, projected
 
 
+def sti_wel_csudb(place, train_dev, train_run, test_dev, test_run):
+
+    # read data training
+    train_paths = get_paths(place, train_dev, train_run, meta=True)
+    test_paths = get_paths(place, test_dev, test_run, meta=True)
+
+    # this is because data for one of them is missing
+    if not test_paths or not train_paths:
+        print("no data for", place, train_dev)
+        return [], []
+
+    train_meta_dict = read_meta(train_paths[1])
+
+    training_df = read_csv(train_paths[0], ["WAP*"], ['x', 'y'], replace_na=-100,
+                           force_samples_per_rp=5, rename_cols=train_meta_dict)
+
+    # read data testing
+    test_paths = get_paths(place, test_dev, test_run, meta=True)
+    test_meta_dict = read_meta(test_paths[1])
+
+    validation_df = read_csv(test_paths[0], ["WAP*"], ['x', 'y'], replace_na=-100,
+                             force_samples_per_rp=5, rename_cols=test_meta_dict)
+
+    # reverse mac_dict
+    mac_dict = dict((v, k) for k, v in train_meta_dict.items())
+
+    # keep common columns
+    required_cols = list(set(training_df.columns).intersection(
+        set(validation_df.columns)))
+    training_df = training_df[required_cols]
+    validation_df = validation_df[required_cols]
+
+    # rename columns to WAPS
+    training_df = training_df.rename(columns=mac_dict)
+    validation_df = validation_df.rename(columns=mac_dict)
+
+    # input/output cols
+    input_cols = uf.get_matching_from_list(training_df.columns, "WAP*")
+    output_cols = ['x', 'y']
+
+    target, projected = sti_welm(training_df, validation_df,
+                                 input_cols, output_cols)
+
+    return target, projected
+
+
+def do_sti_welm_all(place_list=None, compare_self=True):
+    """
+    run welm on all devices,
+    :returns: dict{place}{dev_train}{dev_test} => list
+    """
+    errors = defaultdict(lambda: defaultdict(dict))
+
+    if not place_list:
+        print("place list not given!")
+        place_list = Place.list_all[1:]
+    else:
+        print(place_list)
+
+    # ignore lg and bc_infill
+    for p in place_list:
+        for dev_train in Device.list_all[1:]:
+            for dev_test in Device.list_all[1:]:
+
+                if dev_train == dev_test and not compare_self:
+                    continue
+
+                # print("\n", p, dev_train, dev_test)
+
+                real, guess = sti_wel_csudb(p, dev_train, 0, dev_test, 1)
+
+                error_in_m = [e / px_to_m[p]
+                              for e in uf.euclideans(real, guess)]
+
+                print("\n\n", p, dev_train, dev_test,
+                      "==>", flush=True, end='')
+                try:
+                    print(sum(error_in_m) / len(error_in_m), flush=True)
+                except:
+                    pass
+
+                errors[p][dev_train][dev_test] = error_in_m
+
+    return errors
+
+
+def write_to_file(filename, ddd_dict):
+    cols = 'place, device_train, device_test'
+    for i in range(100):
+        cols += ', err' + str(i)
+
+    f = open(filename, 'w')
+    f.write(cols + "\n")
+    for p in Place.list_all:
+        for d1 in Device.list_all:
+            for d2 in Device.list_all:
+
+                # if d1 == d2:
+                #     continue
+
+                f.write(p + ", " + d1 + ", " + d2 + ", ")
+                try:
+                    str_dat = [str(x) for x in ddd_dict[p][d1][d2]]
+                except:
+                    print(p, d1, d2)
+                    str_dat = []
+                f.write(", ".join(str_dat) + "\n")
+    f.close()
+
+
+def read_from_file(filename):
+    errors = defaultdict(lambda: defaultdict(dict))
+
+    lines = []
+    with open(filename) as f:
+        lines = f.readlines()
+
+    for line in lines[1:]:
+
+        line_list = line.replace(" ", "").strip("\n").split(",")
+        p = line_list[0]
+        d1 = line_list[1]
+        d2 = line_list[2]
+
+        data_list = list(line_list[3:])
+
+        if data_list:
+            data = [float(x) for x in data_list[3:]]
+        else:
+            data = []
+            print()
+
+        errors[p][d1][d2] = data
+
+    return errors
+
+
 def main():
     """
     main
@@ -71,15 +218,18 @@ def main():
     output_labels = list(train_df.columns[-3:-1])
 
     # fill na in columns and keep only required labels
-    train_df = uf.fill_na_columns(train_df, input_labels, -100)[input_labels + output_labels]
-    test_df = uf.fill_na_columns(test_df, input_labels, -100)[input_labels + output_labels]
+    train_df = uf.fill_na_columns(
+        train_df, input_labels, -100)[input_labels + output_labels]
+    test_df = uf.fill_na_columns(
+        test_df, input_labels, -100)[input_labels + output_labels]
 
     # NA for location
     train_df = train_df.dropna(subset=output_labels)
     test_df = test_df.dropna(subset=output_labels)
 
     # sensitivity_analysis(train_df, test_df, input_labels, output_labels)
-    target, projected = sti_welm(train_df, test_df, input_labels, output_labels)
+    target, projected = sti_welm(
+        train_df, test_df, input_labels, output_labels)
 
     aed = WelmRegressor.aed(projected, target, conversion_factor=18)
     print("aed: ", aed)
@@ -143,4 +293,11 @@ def sensitivity_analysis(train_df, test_df, input_labels, output_labels):
 
 
 if __name__ == '__main__':
-    main()
+    # write_to_file('results.csv', do_sti_welm_all(place_list=[Place.lib_2m]))
+    # do_sti_welm_all(compare_self=True)
+    # for dev in Device.list_all[1:]:
+    #     grouped_places_boxplot_devices(read_from_file('results/results.csv'), train_device=Device.oneplus2)
+    grouped_places_boxplot_devices(read_from_file('results.csv'),
+                                   train_device=Device.samsung_s6,
+                                   test_devices=[Device.oneplus2, Device.samsung_s6, Device.oneplus3],
+                                   places=[Place.lib_2m, Place.clark_a, Place.mech_f1])

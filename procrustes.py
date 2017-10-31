@@ -144,7 +144,7 @@ class STI:
                                 > constants.WEIGHT_THRESHOLD]
 
         if train_df.empty and pre_rows > 0:
-            print("No rows above given threshold.")
+            print("No rows above given threshold. min required: ", max(rp_weights))
             return None
 
         # sort rows in descending order

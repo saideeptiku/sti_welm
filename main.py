@@ -1,17 +1,15 @@
 """
 main file for procustes analysis
 """
+from collections import defaultdict
+from WELM import WelmRegressor, ActFunc
+from plotter import grouped_places_boxplot_devices
+from CSUDB.data_fetcher import Device, Place, get_paths, read_meta, read_csv
 import procrustes as ps
-import pandas as pd
 import util_functions as uf
-from WELM import WelmRegressor
-from WELM import ActFunc
 import constants as c
 import numpy as np
 import matplotlib.pyplot as plt
-from CSUDB.data_fetcher import Device, Place, get_paths, read_meta, read_csv, get_map
-from collections import defaultdict
-from plotter import grouped_places_boxplot_devices
 
 px_to_m = {
     'bc_infill': 20,
@@ -23,11 +21,19 @@ px_to_m = {
 
 
 def get_position(df, index, output_labels):
+    """
+    get the values of columns at an index as a list
+    use this function to get position
+    """
     return list(np.array(df[output_labels].iloc[index]).flatten())
 
 
 def sti_welm(train_df, test_df, input_labels, output_labels, at_index=None,
              hyper_param=c.C_HYPER_PARAM, hidden_neurons=c.HIDDEN_LAYER_NEURONS):
+    """
+    base STI-WELM function
+    """
+
     low = 1
     high = test_df.shape[0]
 
@@ -66,6 +72,9 @@ def sti_welm(train_df, test_df, input_labels, output_labels, at_index=None,
 
 
 def sti_wel_csudb(place, train_dev, train_run, test_dev, test_run):
+    """
+    Wrapper over sti_welm() function to work with CSUDB
+    """
 
     # read data training
     train_paths = get_paths(place, train_dev, train_run, meta=True)
@@ -105,10 +114,8 @@ def sti_wel_csudb(place, train_dev, train_run, test_dev, test_run):
     input_cols = uf.get_matching_from_list(training_df.columns, "WAP*")
     output_cols = ['x', 'y']
 
-    target, projected = sti_welm(training_df, validation_df,
-                                 input_cols, output_cols)
-
-    return target, projected
+    return sti_welm(training_df, validation_df,
+                    input_cols, output_cols)
 
 
 def do_sti_welm_all(place_list=None, compare_self=True):
@@ -152,6 +159,12 @@ def do_sti_welm_all(place_list=None, compare_self=True):
 
 
 def write_to_file(filename, ddd_dict):
+    """
+    write the content of dict to file
+    ddd_dict is dict of dict of dict
+    last level dict contains list objects
+    defaultdict(lambda: defaultdict(dict))
+    """
     cols = 'place, device_train, device_test'
     for i in range(100):
         cols += ', err' + str(i)
@@ -176,6 +189,12 @@ def write_to_file(filename, ddd_dict):
 
 
 def read_from_file(filename):
+    """
+    read the content of file to dict
+    ddd_dict is dict of dict of dict
+    last level dict contains list objects
+    defaultdict(lambda: defaultdict(dict))
+    """
     errors = defaultdict(lambda: defaultdict(dict))
 
     lines = []
@@ -202,46 +221,11 @@ def read_from_file(filename):
     return errors
 
 
-def main():
+def plot_on_map(target, projected, map_path, extent=None):
     """
-    main
+    plot target and projected data on a map at given path
+    extent should be a list as in imshow()
     """
-    # read data training
-    train_df = pd.read_csv("CSUDB/CSV/SamsungS6/bc_infill/bc_infill_run1.csv")
-
-    # read validation training
-    test_df = pd.read_csv("CSUDB/CSV/oneplus3/bc_infill/bc_infill_run0.csv")
-
-    # make input feature columns list
-    input_labels = list(train_df.columns[1:-4])
-    # make output feature column list
-    output_labels = list(train_df.columns[-3:-1])
-
-    # fill na in columns and keep only required labels
-    train_df = uf.fill_na_columns(
-        train_df, input_labels, -100)[input_labels + output_labels]
-    test_df = uf.fill_na_columns(
-        test_df, input_labels, -100)[input_labels + output_labels]
-
-    # NA for location
-    train_df = train_df.dropna(subset=output_labels)
-    test_df = test_df.dropna(subset=output_labels)
-
-    # sensitivity_analysis(train_df, test_df, input_labels, output_labels)
-    target, projected = sti_welm(
-        train_df, test_df, input_labels, output_labels)
-
-    aed = WelmRegressor.aed(projected, target, conversion_factor=18)
-    print("aed: ", aed)
-
-    eds = WelmRegressor.eds(projected, target, conversion_factor=18)
-
-    print(min(eds), max(eds), np.median(eds))
-
-    plot_on_map(target, projected, get_map(Place.list_all[0]))
-
-
-def plot_on_map(target, projected, map_path):
     target = np.array(target).reshape(-1, 2)
     projected = np.array(projected).reshape(-1, 2)
 
@@ -250,16 +234,21 @@ def plot_on_map(target, projected, map_path):
 
     im = plt.imread(map_path)
 
-    implot = plt.imshow(im, origin='upper', extent=[-15, 860, 250, 630])
+    if extent:
+        plt.imshow(im, origin='upper', extent=extent)
+    else:
+        plt.imshow(im, origin='upper', extent=[-15, 860, 250, 630])
 
     real_pos_plt = ax1.scatter(target[:, 0], target[:, 1],
-                               c='b', marker='.', alpha=0.6, label="real position")
+                               c='b', marker='.', alpha=0.6,
+                               label="real position")
 
     # for i, txt in enumerate(range(len(target))):
     #     ax1.annotate(str(txt), (target[i, 0], target[i, 1]), color='blue')
 
     proj_pos_plt = ax1.scatter(projected[:, 0], projected[:, 1],
-                               c='r', marker='.', alpha=0.6, label="projected position")
+                               c='r', marker='.', alpha=0.6,
+                               label="projected position")
 
     # for i, txt in enumerate(range(len(projected))):
     #     ax1.annotate(str(txt), (projected[i, 0], projected[i, 1]), color='red')
@@ -273,6 +262,9 @@ def plot_on_map(target, projected, map_path):
 
 
 def sensitivity_analysis(train_df, test_df, input_labels, output_labels):
+    """
+    sensitivuty analysis on hyper-parameter
+    """
     dist = {}
 
     for x in range(2, 40):
@@ -292,12 +284,20 @@ def sensitivity_analysis(train_df, test_df, input_labels, output_labels):
     print("best hyper param: 2 x 10^", dist[min(dist.keys())])
 
 
-if __name__ == '__main__':
+def main():
+    """
+    main
+    """
     # write_to_file('results.csv', do_sti_welm_all(place_list=[Place.lib_2m]))
     # do_sti_welm_all(compare_self=True)
     # for dev in Device.list_all[1:]:
     #     grouped_places_boxplot_devices(read_from_file('results/results.csv'), train_device=Device.oneplus2)
     grouped_places_boxplot_devices(read_from_file('results.csv'),
                                    train_device=Device.samsung_s6,
-                                   test_devices=[Device.oneplus2, Device.samsung_s6, Device.oneplus3],
+                                   test_devices=[
+                                       Device.oneplus2, Device.samsung_s6, Device.oneplus3],
                                    places=[Place.lib_2m, Place.clark_a, Place.mech_f1])
+
+
+if __name__ == '__main__':
+    main()

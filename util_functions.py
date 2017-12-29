@@ -3,7 +3,8 @@ utility functions for this project.
 """
 import pandas as pd
 from tabulate import tabulate
-
+from scipy.spatial.distance import euclidean
+import re
 
 def print_df(df):
     """
@@ -50,3 +51,18 @@ def get_intersection_on(df_x, df_y, on_col_labels_list):
     """
 
     return pd.merge(df_x, df_y, how='inner', on=on_col_labels_list)
+
+
+def euclideans(list_tuples1, list_tuples2):
+    dist = []
+
+    for (u1, v1), (u2, v2) in zip(list_tuples1, list_tuples2):
+        dist.append(euclidean((u1, v1), (u2, v2,)))
+
+    return dist
+
+def get_matching_from_list(lst, regexp):
+       
+    r = re.compile(regexp)
+    return list(filter(r.match, lst))
+

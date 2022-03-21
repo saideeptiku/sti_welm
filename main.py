@@ -32,6 +32,19 @@ def sti_welm(train_df, test_df, input_labels, output_labels, at_index=None,
              hyper_param=c.C_HYPER_PARAM, hidden_neurons=c.HIDDEN_LAYER_NEURONS):
     """
     base STI-WELM function
+    
+    Parameters:
+    -----------
+    train_df: pandas dataframe of training fingerprints
+    test_df: pandas datafram of testing fingerprints
+    input_labels: list of columns that are mac ids in train and test dataframes
+    ouput_labels: list of location label column name
+    at_index: Value at which location labels start;
+              By default assumes location label starts at 1
+    
+    Returns:
+    --------
+    list of true positions, list of predicted postions
     """
 
     low = 1
